@@ -37,8 +37,8 @@ MCP_SERVERS = [
 
 # END GENERATED
 
-def init_mcp_servers():
-    return [McpServer(name=name, url=build_mcp_url(url)) for (name, url) in MCP_SERVERS]
+def init_mcp_servers(workspace_client=None):
+    return [McpServer(name=name, url=build_mcp_url(url, workspace_client), workspace_client=workspace_client) for (name, url) in MCP_SERVERS]
 
 def create_agent(mcp_servers: List[MCPServer]) -> Agent:
     return Agent(
@@ -51,9 +51,8 @@ def create_agent(mcp_servers: List[MCPServer]) -> Agent:
 
 @invoke()
 async def invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-    # Optionally use the user's workspace client for on-behalf-of authentication
     user_workspace_client = get_user_workspace_client()
-    mcp_servers = init_mcp_servers()
+    mcp_servers = init_mcp_servers(workspace_client=user_workspace_client)
     async with MCPServerManager(servers = mcp_servers, connect_in_parallel=True) as manager:
         agent = create_agent(manager.active_servers)
         messages = [i.model_dump() for i in request.input]
@@ -63,9 +62,8 @@ async def invoke(request: ResponsesAgentRequest) -> ResponsesAgentResponse:
 
 @stream()
 async def stream(request: dict) -> AsyncGenerator[ResponsesAgentStreamEvent, None]:
-    # Optionally use the user's workspace client for on-behalf-of authentication
     user_workspace_client = get_user_workspace_client()
-    mcp_servers = init_mcp_servers()
+    mcp_servers = init_mcp_servers(workspace_client=user_workspace_client)
     async with MCPServerManager(servers = mcp_servers, connect_in_parallel=True) as manager:
         agent = create_agent(manager.active_servers)
         messages = [i.model_dump() for i in request.input]
